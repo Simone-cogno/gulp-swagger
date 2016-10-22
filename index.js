@@ -5,6 +5,7 @@ var gutil = require('gulp-util');
 var swaggerParser = require('swagger-parser');
 var swaggerTools = require('swagger-tools').specs.v2; // Validate using the latest Swagger 2.x specification
 var CodeGen = require('swagger-js-codegen').CodeGen;
+var CircularJSON = require('circular-json');
 var PLUGIN_NAME = 'gulp-swagger';
 
 module.exports = function gulpSwagger (filename, options) {
@@ -171,9 +172,9 @@ module.exports = function gulpSwagger (filename, options) {
 						codeGenSettings.mustache = codeGenSettings.mustache || {};
 						// Allow swagger schema to be easily accessed inside templates.
 						codeGenSettings.mustache.swaggerObject = swaggerObject;
-						codeGenSettings.mustache.swaggerJSON = JSON.stringify(swaggerObject);
+						codeGenSettings.mustache.swaggerJSON = CircularJSON.stringify(swaggerObject);
 						// Allow each individual JSON schema to be easily accessed inside templates (for validation purposes).
-						codeGenSettings.mustache.JSONSchemas = JSON.stringify(
+						codeGenSettings.mustache.JSONSchemas = CircularJSON.stringify(
 							Object.keys(swaggerObject.paths)
 								.reduce(function reducePaths (newPathCollection, currentPath) {
 									var pathMethods = swaggerObject.paths[currentPath] || {};
@@ -207,7 +208,12 @@ module.exports = function gulpSwagger (filename, options) {
 						fileBuffer = CodeGen[codeGenFunction](codeGenSettings);
 					}
 					else {
-						fileBuffer = JSON.stringify(swaggerObject);
+						try{
+								fileBuffer = JSON.stringify(swaggerObject);
+						} catch (e) {
+							fileBuffer = CircularJSON.stringify(swaggerObject);
+						}
+
 					}
 
 					// Return processed file to gulp
